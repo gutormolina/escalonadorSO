@@ -12,6 +12,10 @@ typedef struct
 {
     int id;
     int tempo_atual;
+    int n_tarefas;
+    Tarefa tarefas[100];
+    int inicio[100];
+    int fim[100];
 } Processador;
 
 int compararTarefasSJF(const void *a, const void *b)
@@ -54,21 +58,8 @@ void escalonarTarefas(Tarefa *tarefas, int n_tarefas, int n_processadores,
     {
         processadores[i].id = i;
         processadores[i].tempo_atual = 0;
+        processadores[i].n_tarefas = 0;
     } // inicializa os processadores;
-    
-    FILE *saida = fopen(arquivo_saida, "w");
-
-    if (saida == NULL)
-    {
-        printf("Erro ao criar arquivo de saída.\n");
-
-        exit(1);
-    }
-
-    for (int i = 0; i < n_processadores; i++)
-    {
-        fprintf(saida, "Processador_%d\n", processadores[i].id);
-    }
 
     for (int i = 0; i < n_tarefas; i++)
     {
@@ -76,11 +67,32 @@ void escalonarTarefas(Tarefa *tarefas, int n_tarefas, int n_processadores,
         int inicio = processadores[livre].tempo_atual;
         int fim = inicio + tarefas[i].tempo_execucao;
 
-        fprintf(saida, "%s;%d;%d\n", tarefas[i].nome, inicio, fim);
+        processadores[livre].tarefas[processadores[livre].n_tarefas] = tarefas[i];
+        processadores[livre].inicio[processadores[livre].n_tarefas] = inicio;
+        processadores[livre].fim[processadores[livre].n_tarefas] = fim;
+        processadores[livre].n_tarefas++;
 
         processadores[livre].tempo_atual = fim;
     }
-    
+
+    FILE *saida = fopen(arquivo_saida, "w");
+
+    if (saida == NULL)
+    {
+        printf("Erro ao criar arquivo de saída.\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < n_processadores; i++)
+    {
+        fprintf(saida, "Processador_%d\n", processadores[i].id);
+        for (int j = 0; j < processadores[i].n_tarefas; j++)
+        {
+            fprintf(saida, "%s;%d;%d\n", processadores[i].tarefas[j].nome,
+                    processadores[i].inicio[j], processadores[i].fim[j]);
+        }
+    }
+
     fclose(saida);
 }
 
@@ -89,7 +101,6 @@ int main(int argc, char const *argv[])
     if (argc != 3)
     {
         printf("Uso: %s <arquivo_de_entrada> <n_processadores>\n", argv[0]);
-
         return 1;
     }
     
@@ -101,7 +112,6 @@ int main(int argc, char const *argv[])
     if (fp == NULL)
     {
         printf("Erro ao abrir arquivo\n");
-
         return 1;
     }
 
